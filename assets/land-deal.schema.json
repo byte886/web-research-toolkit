@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "plot_id": { "type": "string", "description": "地块编号/宗地代码，保留原文括号(统一中文六角括号〔〕)" },
+    "location": { "type": "string", "description": "地块位置或所属板块" },
+    "land_use": { "type": "string", "description": "土地用途(住宅/居住/商业/工业/综合等)" },
+    "area_sqm": { "type": "number", "description": "出让面积,统一平方米;原文若为公顷必须×10000换算(如6.874629公顷=68746.29)" },
+    "area_raw": { "type": "string", "description": "原文面积表述(含原单位),用于复核换算" },
+    "far": { "type": "number", "description": "容积率=总计容建面/用地面积的比值,通常是0.3-8之间的小数(如2.1);它不是价格,切勿与楼面价floor_price混淆;页面没有则null" },
+    "deal_price_wan": { "type": "number", "description": "成交总价,统一万元;原文若为亿元必须×10000换算(如3.806亿=38060万元)" },
+    "deal_price_raw": { "type": "string", "description": "原文成交价表述(含原单位),用于复核换算" },
+    "floor_price": { "type": "number", "description": "楼面地价=成交总价/计容建面,单位元/平方米,数值通常上千;它不是容积率,切勿与far混淆;页面没有则留null,可后续本地复算" },
+    "winner": { "type": "string", "description": "竞得人/受让单位" },
+    "deal_date": { "type": "string", "description": "成交/公示日期,格式YYYY-MM-DD" },
+    "sourceUrl": { "type": "string", "description": "原始请求URL,由fc_scrape.py自动回填,不要从页面导航中取链接" },
+    "fetchedAt": { "type": "string", "description": "抓取日期YYYY-MM-DD,由fc_scrape.py自动填写,不要从页面推断" }
+  },
+  "required": ["plot_id", "deal_price_wan", "sourceUrl"]
+}
