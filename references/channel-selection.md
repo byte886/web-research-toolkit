@@ -24,6 +24,7 @@
 | Jina Reader（脚本 jina_read.py，已验证） | r.jina.ai 任意 URL→干净 Markdown（0 残留 HTML、保留标题链接） | web.fetch/Firecrawl 都失败时的第三读网页通道，海外页效果好 | Markdown | 免费无 key；脚本默认走 7890 代理、自动 URL 编码（§3.7） |
 | Exa 语义搜索（脚本 exa_search.py，已验证） | 免 key MCP，自然语言语义检索返回干净正文，可间接摸到 Reddit 讨论 | 英文/海外资料找相似、找专业文章、社媒讨论线索 | 结构化 JSON（含溯源） | 免费免 key、直连无需代理（§3.6） |
 | 社交 UGC 平台（待接入） | 小红书/微博/公众号/X/FB/IG/LinkedIn/雪球等，经 OpenCLI/各 MCP + 登录态读取 | 平台内舆情口碑（评估中仅作 T4 线索） | 平台文本 | 需 Docker/账号 Cookie/代理、有封号风险，需用户介入（见 §6） |
+| **付费社群：生财有术 scys-mcp（已验证）** | 官方 MCP 连接器，OAuth 授权后以本人身份读会员私有内容 | 精华帖/风向标、项目库、航海手册、圈友发言、线下局、个人足迹，AI 亦仁做决策判断 | 帖子全文/AI 摘要/字段 + 原文链接 | 需生财会员；官方接口不封号；详见 §3.9 与 scys-mcp-guide.md |
 | 其它已验证公开通道 gh/RSS/V2EX | gh 读公开仓库；RSS/Atom 订阅；V2EX 公开 API | 开源情报、行业更新订阅、技术社区 | 文本/JSON/XML | 免费；RSS/V2EX 境外或需代理（§3.8） |
 
 **关键区别（搜索 vs Firecrawl）**：搜索是"我问你答"，给基于索引的摘要，快但可能滞后、不保证穷尽、字段不统一；Firecrawl 是"采集管线"，对指定 URL/入口实时渲染、逐页产出统一结构，可沉淀成可复用数据集。二者互补：Firecrawl 负责把数据搬下来洗干净，模型负责分析与写作。
@@ -31,7 +32,8 @@
 ## 2. 决策树（自上而下）
 
 1. 需要本机登录态 / 付费墙 / 验证码 / 视频流？
-   - 是 → 浏览器自动化技能（登录交用户接管），**不在本技能范围展开**。
+   - 是「生财有术」站内会员内容 → **走官方 scys-mcp 连接器（§3.9），不用浏览器爬、不碰 Cookie**。
+   - 是其它登录态 / 付费墙 / 验证码 → 浏览器自动化技能（登录交用户接管），**不在本技能范围展开**。
    - 否（公开网页）↓
 2. 只是搞懂问题、页面 <20、一次性、不要求固定字段？
    - 是 → 内置搜索；领域问题走垂直检索。
@@ -83,6 +85,13 @@
 - GitHub：`gh` 已装，读公开仓库/搜索免登录（`gh api repos/OWNER/REPO`、`gh search repos "q"`）；写操作与私有库需 `gh auth login`。
 - RSS/Atom：`curl` 取 XML 即可订阅行业更新（境外源走代理）；要解析成结构化再 `pip install feedparser`（本机暂未装）。
 - V2EX：`curl "https://www.v2ex.com/api/topics/hot.json"`，**直连超时、须走代理**。
+
+### 3.9 付费社群：生财有术 scys-mcp（已验证，详见 scys-mcp-guide.md）
+- 本质：官方 MCP 连接器（非爬虫），OAuth 授权后以本人身份读会员可见的站内私有内容；约 45 个工具分 8 能力域（内容搜读/航海/项目库/找人/线下局/个人数据/写操作/AI 亦仁）。
+- 安装：豆包桌面端新建自定义连接器，地址 `https://mcp.scys.com/shengcai-web/mcp`，HTTP（Streamable HTTP），OAuth2.1+PKCE 浏览器授权、无需手填 Token，对话内勾选启用；连通自检＝只读调 `listMenu`（无参）。
+- 调研主力：`contentSearch`（pageSize≤50、pageIndex 从 1 起逐页）广搜 → 按 `entityId` 去重 → 相关性过滤 → `topicDetail` 深读（单批≤2–3、优先 `aiSummaryContent`），结论附 `scys.com/articleDetail/xq_topic/<id>` 链接。
+- 与其它通道分工：它解决"公开网根本没有的圈内私有数据"，**不替代**通用搜索；AI 亦仁（startAiYiRenChat/queryAiYiRenChat）只做主观决策判断、须显式点名。
+- 边界：需有效会员、只看得到权限内内容、数据有约 1 天同步延迟、限流约 40 次/分；默认只读，写操作（点赞/收藏/投锚/关注）需用户明确授权；官方接口不封号，禁止改用浏览器插件/模拟点击爬取。
 
 ## 4. 国内外网络分流（重要）
 
@@ -137,6 +146,7 @@
   - Exa：直连 REST api.exa.ai/search 不带 key 返回 **X402 Payment Required**（按次约 $0.007、要 USDC 支付）；但**经 mcporter 接官方 MCP 端点免 key 已跑通**：`npx -y mcporter@latest config add exa https://mcp.exa.ai/mcp --scope home` 后 `npx mcporter call exa.web_search_exa query="自然语言描述理想页面" numResults=3`，直连无需代理，返回标题/URL/发布时间/高亮正文，英文专业主题相关性高；另有 `web_fetch_exa` 可批量读全文；并能经 Exa 间接检索 Reddit 讨论帖正文（直接读评论楼仍需登录态）。注意官方要求 node>=24、本机 v22 有 EBADENGINE 警告但实测可用；配置写在 ~/.mcporter（`mcporter config remove exa` 可逆）。已封装 `scripts/exa_search.py`，直接输出结构化 JSON 并回填溯源字段。
   - 同批零配置通道实测：gh 读公开仓库可用（一手读到 Agent-Reach star=78460、MIT）；RSS 走代理可取（BBC business 51 条；解析库 feedparser 本机未装，需要时 pip install feedparser）；V2EX 公开 API 直连超时、**走代理可用**。
   - 重门槛通道（小红书/Twitter/FB/IG/LinkedIn/雪球/直接读 Reddit/公众号/小宇宙）的启用前置与风险统一见 §6 待接入清单：本机当前不具备、需用户介入，不擅自启用；抖音/视频字幕与自建 multiplatform-media-fetch 重叠，不重复引入。
+- 2026-09（生财有术 scys-mcp，安装/连通 09-09、中大型主题调研 09 月内实测）：连接器地址 `https://mcp.scys.com/shengcai-web/mcp`，OAuth2.1+PKCE 免手填 Token，约 45 工具，只读 `listMenu` 无参即连通。一次主题普查中 contentSearch 翻 12 页（pageSize=50）+searchTopic 兜底，按 entityId 去重得 548、相关性过滤后 174、topicDetail 深读 9 篇精华跑通全管线。实测坑：① contentSearch 多页同拉 / topicDetail 单批发太多会 `[Tool result expired]`，须分批、单批≤2–3、当轮落盘，超大结果会自动持久化为 txt 需脚本解析；② 深读优先 `aiSummaryContent`，其次 `articleContentContainFeishuDoc`，`articleContent` 常只有简介；③ 工具 schema 被压缩时先 tool_search 取真实参数再调；④ 限流约 40 次/分/账号。完整 SOP 见 `references/scys-mcp-guide.md`。
 - 待补充：公共资源交易、挂牌平台等目标站点经各通道的可抓性与字段质量，实测后登记于此。
 
 ## 6. 待接入通道清单（需用户介入；每次启用前先只读实测一条，成功后再改状态）
