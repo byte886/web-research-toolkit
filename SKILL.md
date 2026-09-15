@@ -36,7 +36,7 @@ compatibility: "仅在 macOS(Darwin) 实测可用；Windows/Linux 未适配。�
 | 整站批量、JS 动态渲染页、媒体/普通网页要固定字段 JSON、反复更新、变更监控 | **Firecrawl**（脚本 `scripts/fc_scrape.py`，指南见第三节） | 按 credit 计费；keyless 仅单页；**云端在境外，部分大陆 gov.cn 会 DNS 失败，遇此改 web.fetch** |
 | 英文/海外资料、语义"找相似"、Reddit 讨论线索 | **Exa 语义搜索**（脚本 `scripts/exa_search.py`，免 key） | 自然语言描述需求；结果默认 T3，回源后定级；直连无需代理 |
 | 海外已知页面，web.fetch/Firecrawl 都读不下来 | **Jina Reader**（脚本 `scripts/jina_read.py`） | 走代理、自动 URL 编码；境外云端取页 |
-| 国外站点 / Google | 先开代理（ClashX `http://127.0.0.1:7890`） | 国内政府/站点直连；**Firecrawl API、Exa MCP 直连；Jina/RSS/V2EX 走代理** |
+| 国外站点 / Google | 先开代理（端口以本机实测为准：ClashX 多为 7890、ClashVerge 多为 7897） | 国内政府/站点直连；**Firecrawl API、Exa MCP 直连；Jina/RSS/V2EX 走代理** |
 | 需要可视化点击、人工登录或验证码 | 浏览器自动化技能（browser-use / computer-use），登录环节交用户接管 | 不在本技能展开；本机登录态内容不走 Firecrawl 云端 |
 
 完整对比、决策树、中英文搜索源路由与各通道实测边界见 `references/channel-selection.md`；**政策/红头文件的权威库与五级分层找法见 `references/policy-source-map.md`**。
@@ -63,7 +63,7 @@ compatibility: "仅在 macOS(Darwin) 实测可用；Windows/Linux 未适配。�
 ```bash
 # Exa 英文语义搜索（首次需配置，免 key：npx -y mcporter@latest config add exa https://mcp.exa.ai/mcp --scope home）
 python3 scripts/exa_search.py "natural-language description of the ideal page" --num 5 --out exa.json
-# Jina 任意网页→Markdown（默认走 7890 代理、自动 URL 编码；web.fetch/Firecrawl 失败时的海外页兜底）
+# Jina 任意网页→Markdown（默认自动探测本机代理端口（7890/7897/…）、自动 URL 编码；web.fetch/Firecrawl 失败时的海外页兜底）
 python3 scripts/jina_read.py "https://example.com" --out page.md
 ```
 > 通道决策树、gh/RSS/V2EX 用法、待接入平台（小红书/Twitter/Reddit 读帖/公众号等，启用前先实测）见 `references/channel-selection.md`。

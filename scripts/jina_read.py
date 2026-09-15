@@ -4,7 +4,7 @@
 Jina Reader：任意 URL → 干净 Markdown（零第三方 Python 依赖，底层用系统 curl）。
 
 实测固化的坑（2026-09-07）：
-1) r.jina.ai 国内直连超时，默认走本机代理 http://127.0.0.1:7890
+1) r.jina.ai 国内直连超时，默认走本机代理 自动探测端口，常见 7890/7897
    （--proxy 换端口，--no-proxy 直连）；
 2) 目标 URL 必须百分号编码后拼到 r.jina.ai/ 之后，直接嵌 https:// 会被工具层拦截；
 3) Python urllib 经 ClashX 代理访问 r.jina.ai 会 SSL EOF，而系统 curl 走同一代理稳定
@@ -26,6 +26,25 @@ import sys
 import time
 import urllib.parse
 
+import socket
+import os
+
+PROXY_PORT_CANDIDATES = (7890, 7897, 1087, 1080, 8889)
+
+def _detect_proxy(timeout=0.3):
+    # 环境变量优先，其次在常见混合端口里找第一个正在监听的；都没有返回 None（直连）
+    for var in ("HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy", "HTTP_PROXY", "http_proxy"):
+        v = os.environ.get(var, "").strip()
+        if v:
+            return v
+    for port in PROXY_PORT_CANDIDATES:
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=timeout):
+                return "http://127.0.0.1:%d" % port
+        except OSError:
+            continue
+    return None
+
 JINA_BASE = "https://r.jina.ai/"
 
 
@@ -43,7 +62,7 @@ def fetch(url, proxy, timeout):
     except subprocess.TimeoutExpired:
         sys.exit("[jina_read] curl 超时（%ss）。" % timeout)
     if p.returncode != 0:
-        hint = "" if proxy else "\n国内访问 r.jina.ai 通常需要代理（默认 127.0.0.1:7890）。"
+        hint = "" if proxy else "\n国内访问 r.jina.ai 通常需要代理（默认 自动探测端口，常见 7890/7897）。"
         sys.exit("[jina_read] curl 失败(code=%s): %s%s" %
                  (p.returncode, p.stderr.strip()[-400:], hint))
     body, _, code = p.stdout.rpartition("\n")  # 末行是 -w 写入的状态码
@@ -54,14 +73,14 @@ def main():
     ap = argparse.ArgumentParser(
         description="Jina Reader：任意 URL → 干净 Markdown（默认走本机代理、自动编码）")
     ap.add_argument("url", help="目标页面 URL")
-    ap.add_argument("--proxy", default="http://127.0.0.1:7890",
-                    help="HTTP 代理，默认 http://127.0.0.1:7890")
+    ap.add_argument("--proxy", default=None,
+                    help="HTTP 代理，默认 自动探测端口，常见 7890/7897")
     ap.add_argument("--no-proxy", action="store_true", help="直连，不走代理")
     ap.add_argument("--out", help="写文件，否则打印到 stdout")
     ap.add_argument("--timeout", type=int, default=45)
     args = ap.parse_args()
 
-    proxy = None if args.no_proxy else args.proxy
+    proxy = None if args.no_proxy else (args.proxy or _detect_proxy())
     md, code, secs, via = fetch(args.url, proxy, args.timeout)
     if code != "200":
         sys.exit("[jina_read] HTTP %s，返回：%s" % (code, md[:300]))

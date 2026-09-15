@@ -21,7 +21,7 @@
 | web.fetch | 对已知 URL 服务端取全文 | 精读单页、在线 PDF/长文分页读完 | 页面全文/片段 | 0 |
 | Firecrawl | 云端真实浏览器渲染+LLM 结构化 | 整站批量、JS 动态页、固定字段 JSON、监控 | Markdown/JSON 数据集 | 免费 1000 credits/月，超出付费 |
 | 浏览器自动化（browser/computer-use） | 操作真实浏览器 | 可视化点击、登录后内容、人工接管 | 页面内容/截图 | 0，但占人工 |
-| Jina Reader（脚本 jina_read.py，已验证） | r.jina.ai 任意 URL→干净 Markdown（0 残留 HTML、保留标题链接） | web.fetch/Firecrawl 都失败时的第三读网页通道，海外页效果好 | Markdown | 免费无 key；脚本默认走 7890 代理、自动 URL 编码（§3.7） |
+| Jina Reader（脚本 jina_read.py，已验证） | r.jina.ai 任意 URL→干净 Markdown（0 残留 HTML、保留标题链接） | web.fetch/Firecrawl 都失败时的第三读网页通道，海外页效果好 | Markdown | 免费无 key；脚本默认自动探测本机代理端口（7890/7897/…）、自动 URL 编码（§3.7） |
 | Exa 语义搜索（脚本 exa_search.py，已验证） | 免 key MCP，自然语言语义检索返回干净正文，可间接摸到 Reddit 讨论 | 英文/海外资料找相似、找专业文章、社媒讨论线索 | 结构化 JSON（含溯源） | 免费免 key、直连无需代理（§3.6） |
 | 社交 UGC 平台（待接入） | 小红书/微博/公众号/X/FB/IG/LinkedIn/雪球等，经 OpenCLI/各 MCP + 登录态读取 | 平台内舆情口碑（评估中仅作 T4 线索） | 平台文本 | 需 Docker/账号 Cookie/代理、有封号风险，需用户介入（见 §6） |
 | **付费社群：生财有术 scys-mcp（已验证）** | 官方 MCP 连接器，OAuth 授权后以本人身份读会员私有内容 | 精华帖/风向标、项目库、航海手册、圈友发言、线下局、个人足迹，AI 亦仁做决策判断 | 帖子全文/AI 摘要/字段 + 原文链接 | 需生财会员；官方接口不封号；详见 §3.9 与 scys-mcp-guide.md |
@@ -78,7 +78,7 @@
 - 适用：英文/海外资料、语义"找相似/找同类"、社媒讨论线索；直连无需代理。边界：是语义检索而非穷尽列表；REST 直连要 X402 付费，必须走本脚本的 MCP 通道。
 
 ### 3.7 Jina Reader（脚本 scripts/jina_read.py，已验证）
-- 调用：`python3 scripts/jina_read.py "https://目标页" [--out page.md]`；脚本默认走 7890 代理并自动做 URL 百分号编码，`--proxy` 换端口、`--no-proxy` 直连。
+- 调用：`python3 scripts/jina_read.py "https://目标页" [--out page.md]`；脚本默认自动探测本机代理端口（7890/7897/…）并自动做 URL 百分号编码，`--proxy` 换端口、`--no-proxy` 直连。
 - 适用：web.fetch/Firecrawl 读不下来的海外页面，要干净 Markdown。边界：境外云端取页，国内 gov.cn 可抓性未验证；底层用系统 curl（Python urllib 经 ClashX 会 SSL EOF）。
 
 ### 3.8 其它已验证零配置公开通道
@@ -97,14 +97,14 @@
 
 | 目标 | 通道 |
 | --- | --- |
-| Google、YouTube、X 等被墙站点 | 先开代理：ClashX，HTTP 代理 `http://127.0.0.1:7890`（端口以实际为准） |
+| Google、YouTube、X 等被墙站点 | 先开代理（端口以本机实测为准：ClashX 多为 7890、ClashVerge 多为 7897） |
 | 国内政府/公开站点（土地、统计、自规局等） | 直连，走代理反而可能失败 |
 | **Firecrawl API（api.firecrawl.dev）** | **国内直连即可，无需代理**（2026-09-06 实测 200/约 0.9s） |
 | web.fetch | 服务端取页，与本机是否开代理无关 |
 | **Exa MCP（mcp.exa.ai 经 mcporter）** | **直连即可，无需代理**（2026-09-07 实测） |
 | **Jina Reader / RSS / V2EX（境外）** | **走代理**（Jina、V2EX 直连超时；2026-09-07 实测） |
 
-代理检测：`lsof -iTCP:7890 -sTCP:LISTEN` 或 `curl -x http://127.0.0.1:7890 -sI https://www.google.com`。
+代理检测（端口以本机实测为准）：`for p in 7890 7897 1087; do nc -z -w1 127.0.0.1 $p && echo "在用端口 $p"; done`，再 `curl -x http://127.0.0.1:<探测到的端口> -sI https://www.google.com`。
 
 ### 4.1 按内容语言/生态选搜索源（与"能不能连上网"是两回事）
 
