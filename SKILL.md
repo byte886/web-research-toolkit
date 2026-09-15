@@ -1,105 +1,59 @@
 ---
 name: web-research-toolkit
-description: 网络调研与公开网页数据采集的统一编排技能。当需要做资料/信息/数据搜集、市场/政策/行业/竞品调研、网页批量采集或转结构化(JSON/表格)、事实核查与信源溯源、持续监控网页变化、房地产评估数据（土地成交、挂牌价、规划/政策文件）采集时使用。负责按任务特征路由取数通道（内置联网搜索、网页精读 web.fetch、Firecrawl 云端抓取与结构化、垂直领域检索、代理分流），并固化"界定问题→选源→采集→交叉核验→结构化溯源→交付归档"的标准流程。触发词：调研、搜集/汇总资料、查清楚、批量抓取网页、网页转 JSON/表格、提取网页字段、监控网页更新、土地成交/挂牌案例采集、信源核查、证据溯源、生财有术/付费社群圈内资料检索（scys-mcp）、精华帖/航海手册/项目库检索、问 AI 亦仁。
-compatibility: "方法论与随附脚本均跨平台：scripts 只用 Python 标准库(urllib/json/socket/subprocess 等)与云端取数 API(Jina/Exa/Firecrawl)，不调用任何操作系统专有能力，Windows/Linux/macOS 均可运行；已在 macOS 实测，其余平台遇路径/编码/本机代理等差异就地适配，无需按操作系统拦截停跑"
+description: 网络调研与公开网页数据采集的统一编排技能。做资料搜集、市场/政策/行业/竞品调研、网页批量采集或转结构化(JSON/表格)、事实核查与信源溯源、网页变更监控、土地成交/挂牌等房地产数据采集时使用；含生财有术(scys-mcp)站内付费圈内容检索。按任务特征路由取数通道，并固化"界定→选源→采集→交叉核验→结构化溯源→交付"标准流程。
+compatibility: "跨平台：scripts 仅用 Python 标准库与云端取数 API，不依赖操作系统专有能力；已在 macOS 实测，其余平台遇路径/编码/本机代理差异就地适配，无需按 OS 拦截停跑"
 ---
 
 # 网络调研工具箱（web-research-toolkit）
 
 ## 平台适用
-- 本技能方法论与脚本**跨平台**：scripts 只用 Python 标准库（urllib/json/socket/subprocess 等）与云端取数 API（Jina/Exa/Firecrawl 等），不调用任何操作系统专有能力，Windows / Linux / macOS 均可运行。
-- 已在 macOS 实测；其余平台未专门实测，遇到路径、编码、本机代理端口等差异就地适配，**不需要按操作系统拦截或停跑**。
+- 本技能方法论与脚本**跨平台**：scripts 只用 Python 标准库（urllib/json/socket/subprocess 等）与云端取数 API（Jina/Exa/Firecrawl），不调用任何操作系统专有能力。
+- 已在 macOS 实测；其余平台未专门实测，遇路径、编码、本机代理端口差异就地适配，**不按操作系统拦截停跑**。
 - 本机代理按候选端口探测、不写死；浏览器 cookie 复用只是可选增强，缺失时回退云端通道，不作为硬依赖。
 
 统一编排"从公开网络取数 → 核验 → 结构化 → 溯源交付"。本技能不重复实现搜索引擎，核心价值是**选对通道、走对流程、留好证据**。
 
-## 一、调研标准流程（7 步，按序执行）
+## 何时用 / 反触发
 
-1. **界定问题与交付物**：要回答的子问题、输出形态（结论 / 表 / 数据集 / 报告）、范围与时间口径。
-2. **拆子问题、列信源清单**：每个子问题指定候选源，优先一手/官方源（信源分级见 `references/source-schema.md`）。
-3. **选通道采集**：按第二节路由；先广搜定位，再对目标页精读或抓取。**检索语言跟着信息源走、多语召回**：技术/编程/AI/开源/国际前沿类以英文为主（报错、API、型号原样不译），国内业务（房产评估、国内政策与市场、本土平台、本地生活）以中文为主，研究某国市场就配该国语种；主语言之外再补一轮另一语言交叉核验，**优先不等于放弃**。细则见 `references/channel-selection.md` §4.1。
-4. **去重与交叉核验**：关键事实至少 2 个独立来源；冲突保留两说并标注；区分"事实 / 观点 / 一方声称"。
-5. **结构化**：固定字段入库，每条记录必带 `sourceUrl + fetchedAt + 信源等级`（模板见 source-schema）。
-6. **综合分析**：只基于已核验证据下结论；证据不足标"待核实"，**不编造数字与来源**。
-7. **交付与归档**：结论逐条附来源；需要沉淀时归档飞书知识库（按项目 AGENTS 规则询问）。
+**用我**：资料搜集与汇总、市场/政策/行业/竞品调研、网页批量抓取、网页转 JSON/表格或提取固定字段、事实核查与信源溯源、网页变更监控、土地成交/挂牌等房地产评估数据采集、生财有术站内付费圈资料检索。
 
-> 完整 SOP、反幻觉清单、房地产评估专项调研清单见 `references/research-workflow.md`。
+**不用我（边界）**：视频/音频字幕与抖音、B 站等媒体下载 → 走 `multiplatform-media-fetch`；需可视化点击、人工登录、验证码 → 走浏览器自动化技能（登录交用户接管）；中国法规规范性文件的条文级检索 → 走 `pkulaw-legal-data` 技能；金融行情/财报、医疗、企业内部检索各有垂直技能，本技能只路由到它们、不重复实现。
 
-## 二、取数通道路由（核心，先选通道再动手）
+## 标准流程（7 步，按序）
 
-| 任务特征 | 用什么 | 关键边界 |
+界定问题与交付物 → 拆子问题列信源清单（优先一手/官方源）→ 按下表选通道采集 → 关键事实≥2 个独立来源交叉核验、冲突保留两说 → 结构化入库（每条必带 `sourceUrl+fetchedAt+信源等级`）→ 只基于已核验证据下结论、不足标"待核实" → 交付逐条附源、需要沉淀时按项目 AGENTS 规则询问是否归档。
+
+> 完整 SOP、反幻觉清单、房地产评估专项清单见 `references/research-workflow.md`；信源分级与结构化模板见 `references/source-schema.md`。
+
+## 取数通道路由（先选通道再动手）
+
+| 要做什么 | 用什么 | 读哪篇 |
 | --- | --- | --- |
-| 不知道信息在哪、探索性问题、少量事实、要最新动态 | 内置联网搜索（general_search），一次并行 ≤3 个 query | 基于搜索索引，给摘要+链接，可能滞后、不保证穷尽 |
-| 垂直领域：学术 / 中国法规规范性文件 / 金融 / 医疗 / 企业内部 | 中国法规优先 **pkulaw-legal-data 技能（可看现行有效/时效）**；其余 scholar/finance/medical/enterprise | 领域问题优先垂直库；政策红头文件权威源见 policy-source-map |
-| 付费社群「生财有术」圈内私有资料：精华帖/风向标、项目库、航海手册、圈友发言、线下局、个人足迹 | **scys-mcp 连接器**（指南见 `references/scys-mcp-guide.md`，速查见第四节） | 需生财会员+OAuth 授权、对话内勾选启用；默认只读、官方接口不封号；**仅当公开网没有的站内私有信息才走它**，纯通用问题不必走 |
-| 已知具体 URL，要全文、读在线 PDF/长文档、**大陆 gov.cn 政府站** | web.fetch（分页读完，服务端取页，**不受本机代理影响**） | 单页/少量页精读；大陆政府站首选它兜底；不做整站递归 |
-| 整站批量、JS 动态渲染页、媒体/普通网页要固定字段 JSON、反复更新、变更监控 | **Firecrawl**（脚本 `scripts/fc_scrape.py`，指南见第三节） | 按 credit 计费；keyless 仅单页；**云端在境外，部分大陆 gov.cn 会 DNS 失败，遇此改 web.fetch** |
-| 英文/海外资料、语义"找相似"、Reddit 讨论线索 | **Exa 语义搜索**（脚本 `scripts/exa_search.py`，免 key） | 自然语言描述需求；结果默认 T3，回源后定级；直连无需代理 |
-| 海外已知页面，web.fetch/Firecrawl 都读不下来 | **Jina Reader**（脚本 `scripts/jina_read.py`） | 走代理、自动 URL 编码；境外云端取页 |
-| 国外站点 / Google | 先开代理（端口以本机实测为准：ClashX 多为 7890、ClashVerge 多为 7897） | 国内政府/站点直连；**Firecrawl API、Exa MCP 直连；Jina/RSS/V2EX 走代理** |
-| 需要可视化点击、人工登录或验证码 | 浏览器自动化技能（browser-use / computer-use），登录环节交用户接管 | 不在本技能展开；本机登录态内容不走 Firecrawl 云端 |
+| 不知信息在哪、探索性问题、少量事实、要最新动态 | 内置联网搜索（一次并行 ≤3 query） | `channel-selection.md` §3.1 |
+| 学术/金融/医疗/企业内部垂直检索 | 对应垂直检索技能；中国大陆法规走 pkulaw-legal-data | `channel-selection.md` §3.2 |
+| 已知 URL 要全文、在线 PDF、大陆 gov.cn 政府站 | web.fetch（分页读完，不受本机代理影响） | `channel-selection.md` §3.3 |
+| 整站批量、JS 动态页、固定字段 JSON、变更监控 | Firecrawl（脚本 `scripts/fc_scrape.py`，按 credit 计费） | `firecrawl-guide.md` |
+| 英文/海外资料、语义"找相似"、Reddit 讨论线索 | Exa 语义搜索（`scripts/exa_search.py`，免 key、直连） | `channel-selection.md` §3.6 |
+| 海外已知页 web.fetch/Firecrawl 都读不下 | Jina Reader（`scripts/jina_read.py`，走代理） | `channel-selection.md` §3.7 |
+| 生财有术站内私有资料（精华帖/项目库/航海手册/圈友/足迹） | scys-mcp 连接器（需会员+OAuth，默认只读） | `scys-mcp-guide.md` |
+| 政策/红头文件权威库与五级分层找法 | policy-source-map | `policy-source-map.md` |
 
-完整对比、决策树、中英文搜索源路由与各通道实测边界见 `references/channel-selection.md`；**政策/红头文件的权威库与五级分层找法见 `references/policy-source-map.md`**。
+> 通道总览表、决策树、各通道实测边界见 `channel-selection.md`；网络分流与"先英后中"检索语言策略见 `network-and-language.md`；实测台账与待接入清单见 `field-test-notes.md`。
+> 成本原则：能用低成本通道解决就不上重通道；要穷尽/结构化/反复更新才上 Firecrawl。
 
-## 三、Firecrawl 用法（速查）
-
-- **零 key（不注册，当前默认）**：单页转 Markdown、单页 JSON 结构化、搜索、PDF 解析；按"IP/天"限流；国内直连。
-- **注册免费档（1000 credits/月，$0）后解锁**：Map 列整站链接、Crawl 整站爬取、批量 Extract、Monitor 定时监控。
-- **成本（官方单价，2026-09 核实）**：Markdown 抓取 1 credit/页；**JSON 结构化 5/页**；搜索 2/10 条；监控 1/页/次；交互浏览器 2/分钟；额度月底清零。
-- **单页直接跑（零依赖脚本）**：
-  ```bash
-  # 转 Markdown，结果打印到屏幕（也可 --out page.md）
-  python3 scripts/fc_scrape.py "https://example.com"
-  # 按 JSON Schema 结构化（schema 模板见 assets/）
-  python3 scripts/fc_scrape.py "https://某公告页" --json \
-    --schema-file ../assets/land-deal.schema.json \
-    --prompt "提取土地出让成交信息" --out row.json
-  # 有注册 key 后：export FIRECRAWL_API_KEY=fc-xxx（自动切换，额度更高）
-  ```
-
-> 端点全表、keyless 实测边界、定价档位、SDK/MCP 接入、批量与监控管线、避坑见 `references/firecrawl-guide.md`。
-
-### 其它已验证脚本（海外取数）
-```bash
-# Exa 英文语义搜索（首次需配置，免 key：npx -y mcporter@latest config add exa https://mcp.exa.ai/mcp --scope home）
-python3 scripts/exa_search.py "natural-language description of the ideal page" --num 5 --out exa.json
-# Jina 任意网页→Markdown（默认自动探测本机代理端口（7890/7897/…）、自动 URL 编码；web.fetch/Firecrawl 失败时的海外页兜底）
-python3 scripts/jina_read.py "https://example.com" --out page.md
-```
-> 通道决策树、gh/RSS/V2EX 用法、待接入平台（小红书/Twitter/Reddit 读帖/公众号等，启用前先实测）见 `references/channel-selection.md`。
-
-## 四、付费社区内检索：生财有术 MCP（scys-mcp，速查）
-
-- **何时用**：答案依赖生财有术站内私有信息（精华帖/风向标、项目库、航海手册、圈友发言、线下局、自己的足迹），公开网搜不到时；纯通用问题（怎么写作等）不必走。
-- **前置**：豆包桌面端已新建自定义连接器 `scys-mcp`（服务地址 `https://mcp.scys.com/shengcai-web/mcp`，OAuth 授权、对话内勾选启用、需有效会员）；连通性自检＝只读调 `listMenu`（无参），成功即在线。
-- **主力链路**：`contentSearch` 逐页广搜（`pageSize≤50`、`pageIndex` 从 1）→ 按 `entityId` 全局去重 → 标题/摘要相关性过滤 → `topicDetail` 深读（**单批 ≤2–3 个、当轮落盘，优先 `aiSummaryContent` 省 token**）→ 结论附 `scys.com/articleDetail/xq_topic/<id>` 原文链接。
-- **AI 亦仁**（`startAiYiRenChat`+`queryAiYiRenChat`）只回答"怎么看/该不该"的主观判断题，须**显式点名**、给足背景；事实归检索、观点归亦仁、重大决策先检索后亦仁。
-- **红线**：工具 schema 不在上下文先 `tool_search` 取真实参数；大结果当轮落盘防 `[Tool result expired]`；限流约 40 次/分/账号、别高并行；默认只读，点赞/收藏/投锚/关注等写操作需用户明确授权。
-
-> 安装配置全表、45 工具八大能力地图、参数与返回字段、主题调研标准管线、AI 亦仁句式与完整案例见 `references/scys-mcp-guide.md`。
-
-## 五、溯源硬规则（不可违反）
+## 溯源硬规则（不可违反，入口当场生效）
 
 1. 每个事实性结论可追溯到具体 URL；关键事实多源交叉并标注信源等级（官方/权威/专业/自媒体）。
 2. 数字、日期、价格必须来自来源或可复现计算，否则标"待核实"；**禁止编造来源、数值、链接**。
 3. 每条结构化记录必含 `sourceUrl、sourceName、sourceTier、fetchedAt`；评估数据另需可回源核验。
-4. 抓取失败、被反爬、内容为空要**如实报告**，不得用旧快照或臆测填充；区分"已查证 / 一方称 / 未核实"。
+4. 抓取失败、被反爬、内容为空要**如实报告**，不得用旧快照或臆测填充；区分"已查证/一方称/未核实"。
 5. 只采集公开信息，遵守目标站点条款与个人信息保护法，不采集个人敏感信息。
-6. **AI 结构化结果是初稿，不是终稿**：入库前必须过校验门（合理区间、单位按 `*_raw` 复算、相邻字段错位检查、客观字段以程序为准），见 `references/source-schema.md` 2.1。
+6. **AI 结构化结果是初稿不是终稿**：入库前必过校验门（合理区间、单位按 `*_raw` 复算、相邻字段错位检查、客观字段以程序为准）。
 
-## 六、能力清单与扩展位（迭代登记处）
+## 能力与扩展位（迭代登记处）
 
-**已就位（经 2026-09-06 真实土地成交案例验证）**
-- 内置联网搜索 + 垂直检索路由；web.fetch 精读（含大陆 gov.cn 兜底）；Firecrawl 单页（Markdown / JSON，keyless 实测可用）；**Exa 英文语义搜索（exa_search.py 免 key）、Jina 海外网页兜底（jina_read.py）、gh/RSS/V2EX 均已实测**；国内外网络分流。
-- 土地成交 schema：单位换算口径固化（亿→万、公顷→㎡）、含 `*_raw` 原值复核字段。
-- `fc_scrape.py` 自动回填 sourceUrl/fetchedAt（不采信模型）；AI 提取校验门 + 信源溯源规范。
-- **付费社区内检索：生财有术 scys-mcp（2026-09 经一次中大型主题调研验证，548→去重→174→深读 9 篇全链路跑通）**：contentSearch/searchTopic/topicDetail 搜读、AI 亦仁决策分工、"广搜→去重→相关性过滤→多维分类→小批深读→溯源交付"标准管线，详见 `references/scys-mcp-guide.md`。
+**已就位**：内置联网搜索 + 垂直检索路由；web.fetch 精读（含大陆 gov.cn 兜底）；Firecrawl 单页（Markdown/JSON，keyless 实测可用）；Exa 英文语义搜索、Jina 海外网页兜底、gh/RSS/V2EX 均已实测；国内外网络分流；生财有术 scys-mcp 搜读+AI 亦仁全管线（详见 `scys-mcp-guide.md`）。
 
-**扩展位（具备条件后启用，先在对应 reference 登记再使用）**
-- [ ] 拿到 Firecrawl API key：Crawl / Map / 批量 Extract / Monitor 变更监控、MCP 接入 Claude Code/Codex
-- [ ] 站点适配器：中国土地市场网、公共资源交易中心、挂牌平台（分页/查询参数固化）
-- [ ] 定时采集 + 快照 diff（new / changed / gone）入数据集
-- [ ] Firecrawl 自托管或其它采集通道（按需评估）
-- [ ] 社交 UGC 平台（小红书/Twitter/Reddit 读帖/公众号等）：前置条件与封号风险见 channel-selection §6，需要时先只读实测 1 条、成功后再启用
+**扩展位**（具备条件后启用，先在 `field-test-notes.md` 登记实测再使用）：Firecrawl key（Crawl/Map/批量 Extract/Monitor、MCP 接入）；中国土地市场网/公共资源交易中心/挂牌平台适配器；定时采集+快照 diff；社交 UGC 平台（小红书/Twitter/Reddit 读帖/公众号，启用前置与封号风险见 `field-test-notes.md` §待接入）。
 
-> 新增任何取数能力，先写进 `references/channel-selection.md` 的通道表，再在流程中使用，保持单一权威清单。
+> 新增任何取数能力，先写进 `channel-selection.md` 的通道表，再在流程中使用，保持单一权威清单。
